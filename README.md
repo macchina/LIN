@@ -1,8 +1,6 @@
-## LIN Library for Macchina M2
-Libraries and Examples for Macchina M2 LIN (Local Interconnect Network) interface.
-https://en.wikipedia.org/wiki/Local_Interconnect_Network
+## LIN Library
 
-
+Library and examples for LIN [(Local Interconnect Network)](https://en.wikipedia.org/wiki/Local_Interconnect_Network) on Arduino. Developed for the Macchina M2.  Can be modified for any Arduino board with UART available and any LIN slave.
 
 #### Install
 
