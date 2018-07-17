@@ -5,7 +5,7 @@
 #######################################
 # Datatypes (KEYWORD1)
 #######################################
-lin_stack KEYWORD1
+lin_stack	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
