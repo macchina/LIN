@@ -38,3 +38,12 @@ http://ww1.microchip.com/downloads/en/DeviceDoc/51714a.pdf
 http://cache.nxp.com/documents/data_sheet/TJA1021.pdf?pspll=1
 
 More information about LIN can be found in those documents.
+
+
+#### Changes duronflo
+
+- correct checksum calculation, removed +1
+- inserted parity calculation in writeRequest method
+- implemented parity calculation
+- implemented bus wake up for proper lin bus waking up
+- Changed default baudrate to 19200 which is more common in automotive applications
