@@ -66,8 +66,9 @@ lin_stack::lin_stack(byte Ch, byte ident){
 int lin_stack::write(byte ident, byte data[], byte data_size){
 	// Calculate checksum
 	byte suma = 0;
-	for(int i=0;i<data_size;i++) suma = suma + data[i];
-	suma = suma + 1;
+	for(int i=0;i<data_size;i++) 
+		suma = suma + data[i];
+	//suma = suma + 1;
 	byte checksum = 255 - suma;
 	// Start interface
 	sleep(1); // Go to Normal mode
@@ -95,7 +96,8 @@ int lin_stack::write(byte ident, byte data[], byte data_size){
 
 int lin_stack::writeRequest(byte ident){
 	// Create Header
-	byte header[2]= {0x55, ident};
+	byte identByte = (ident&0x3f) | calcIdentParity(ident);
+	byte header[2]= {0x55, identByte};
 	// Start interface
 	sleep(1); // Go to Normal mode
 	// Synch Break
@@ -118,7 +120,7 @@ int lin_stack::writeResponse(byte data[], byte data_size){
 	// Calculate checksum
 	byte suma = 0;
 	for(int i=0;i<data_size;i++) suma = suma + data[i];
-	suma = suma + 1;
+	//suma = suma + 1;
 	byte checksum = 255 - suma;
 	// Start interface
 	sleep(1); // Go to Normal mode
@@ -161,10 +163,10 @@ int lin_stack::writeStream(byte data[], byte data_size){
 // Read LIN traffic and then proces it.
 int lin_stack::setSerial(){ // Only needed when receiving signals
 	if(ch==1){ // For LIN1 (Channel 1)
-		Serial1.begin(10417); // Configure Serial1
+		Serial1.begin(bound_rate); // Configure Serial1
 		PIOA->PIO_PUER = PIO_PA10; // We need software Pull-Up because there is no hardware Pull-Up resistor
 	} else if(ch==2){ // For LIN2 (Channel 2)
-		Serial2.begin(10417); // Configure Serial1
+		Serial2.begin(bound_rate); // Configure Serial1
 		PIOA->PIO_PUER = PIO_PA12; // We need software Pull-Up because there is no hardware Pull-Up resistor
 	}
 }
@@ -249,7 +251,7 @@ int lin_stack::sleep(byte sleep_state){
 		if(ch==1) PIOB->PIO_CODR = PIO_PB4; // Clear PB4, low state, sleep mode
 		if(ch==2) PIOB->PIO_CODR = PIO_PB7; // Clear PB7, low state, sleep mode
 	}
-	delayMicroseconds(20); // According to TJA1021 datasheet this is needed for propper working
+	delayMicroseconds(20); // According to TJA1021 datasheet this is needed for proper working
 	return 1;
 }
 
@@ -278,10 +280,44 @@ boolean lin_stack::validateParity(byte ident) {
 boolean lin_stack::validateChecksum(unsigned char data[], byte data_size){
 	byte checksum = data[data_size-1];
 	byte suma = 0;
-	for(int i=2;i<data_size-1;i++) suma = suma + data[i];
+	for(int i=2;i<data_size-1;i++) 
+		suma = suma + data[i];
 	byte v_checksum = 255 - suma - 1;
 	if(checksum==v_checksum)
 		return true;
 	else
 		return false;
 } 
+
+int lin_stack::busWakeUp()
+{
+  unsigned int del = period*10; // random delay for dominant signal, has to be in the timeframe from 250us ... 5ms
+  if(ch==2)
+  {
+    PIOA->PIO_PER = PIO_PA13; // enable PIO register
+    PIOA->PIO_OER = PIO_PA13; // enable PA13 as output
+    PIOA->PIO_CODR = PIO_PA13; // clear PA13
+    delayMicroseconds(del); // delay
+    PIOA->PIO_SODR = PIO_PA13; // set pin high
+    PIOA->PIO_PDR = PIO_PA13; // clear configuration for PIO, needs to be done because Serial wont work with it
+  }
+  else if(ch==1)
+  {
+    PIOA->PIO_PER = PIO_PA11; // enable PIO register
+    PIOA->PIO_OER = PIO_PA11; // enable PA11 as output
+    PIOA->PIO_CODR = PIO_PA11; // clear PA11
+    delayMicroseconds(del); // delay
+    PIOA->PIO_SODR = PIO_PA11; // set pin high
+    PIOA->PIO_PDR = PIO_PA11; // clear configuration for PIO, needs to be done because Serial wont work with it
+  }
+  return 1;
+}
+
+/* Create the Lin ID parity */
+#define BIT(data,shift) ((ident&(1<<shift))>>shift)
+byte lin_stack::calcIdentParity(byte ident)
+{
+  byte p0 = BIT(ident,0) ^ BIT(ident,1) ^ BIT(ident,2) ^ BIT(ident,4);
+  byte p1 = ~(BIT(ident,1) ^ BIT(ident,3) ^ BIT(ident,4) ^ BIT(ident,5));
+  return (p0 | (p1<<1))<<6;
+}
