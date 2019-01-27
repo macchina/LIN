@@ -52,6 +52,7 @@
 // CONSTRUCTORS
 lin_stack::lin_stack(byte Ch){
 	sleep_config(Ch); // Configurating Sleep pin for transceiver
+	ch = Ch;
 }
 
 lin_stack::lin_stack(byte Ch, byte ident){
@@ -225,19 +226,21 @@ int lin_stack::readStream(byte data[],byte data_size){
 int lin_stack::serial_pause(int no_bits){
 	// Calculate delay needed for 13 bits, depends on bound rate
 	unsigned int del = period*no_bits; // delay for number of bits (no-bits) in microseconds, depends on period
-	if(ch=2){
+	if(ch==2){
 		PIOA->PIO_PER = PIO_PA13; // enable PIO register
 		PIOA->PIO_OER = PIO_PA13; // enable PA13 as output
 		PIOA->PIO_CODR = PIO_PA13; // clear PA13
 		delayMicroseconds(del); // delay
 		PIOA->PIO_SODR = PIO_PA13; // set pin high
+		PIOA->PIO_ODR = PIO_PA13; // enable PA13 as output
 		PIOA->PIO_PDR = PIO_PA13; // clear configuration for PIO, needs to be done because Serial wont work with it
-	}else if(ch=1){
+	}else if(ch==1){
 		PIOA->PIO_PER = PIO_PA11; // enable PIO register
 		PIOA->PIO_OER = PIO_PA11; // enable PA11 as output
 		PIOA->PIO_CODR = PIO_PA11; // clear PA11
 		delayMicroseconds(del); // delay
 		PIOA->PIO_SODR = PIO_PA11; // set pin high
+		PIOA->PIO_ODR = PIO_PA11; // enable PA13 as output
 		PIOA->PIO_PDR = PIO_PA11; // clear configuration for PIO, needs to be done because Serial wont work with it
 	}
 	return 1;
@@ -261,7 +264,8 @@ int lin_stack::sleep_config(byte serial_No){
 		PIOB->PIO_OER = PIO_PB4; // set PB4 as output
 		PIOB->PIO_PUDR = PIO_PB4; // disable pull-up
 		ch=1; // saved as private variable, used for determening Serial port
-	}else if(serial_No==2){ // When using LIN2 channel - usign Serial2 and pin PB7 for Sleep
+	}else if(serial_No==2)
+	{ // When using LIN2 channel - usign Serial2 and pin PB7 for Sleep
 		PIOB->PIO_PER = PIO_PB7; // enable PIO register on pin PB7
 		PIOB->PIO_OER = PIO_PB7; // set PB7 as output
 		PIOB->PIO_PUDR = PIO_PB7; // disable pull-up
